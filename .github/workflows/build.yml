@@ -14,14 +14,15 @@ jobs:
             bc bison build-essential ccache curl flex \
             g++-multilib gcc-multilib git libssl-dev \
             libncurses5-dev libncurses5 python3 \
-            python-is-python3 zip
+            python-is-python3 zip wget
 
       - name: 下载 Clang 工具链
         run: |
           mkdir -p ~/clang
-          git clone --depth=1 \
-            https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r416183b.git \
-            ~/clang
+          wget -q \
+            "https://github.com/ZyCromerZ/Clang/releases/download/18.0.0git-20240101-release/Clang-18.0.0git-20240101.tar.gz" \
+            -O ~/clang.tar.gz
+          tar -C ~/clang -zxf ~/clang.tar.gz
 
       - name: 拉取内核源码
         run: |
