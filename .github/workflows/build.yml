@@ -1,0 +1,67 @@
+name: Build RMX3031 Kernel with KernelSU
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: 安装依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison build-essential ccache curl flex \
+            g++-multilib gcc-multilib git libssl-dev \
+            libncurses5-dev libncurses5 python3 \
+            python-is-python3 zip
+
+      - name: 下载 Clang 工具链
+        run: |
+          mkdir -p ~/clang
+          git clone --depth=1 \
+            https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r416183b.git \
+            ~/clang
+
+      - name: 拉取内核源码
+        run: |
+          git clone --depth=1 \
+            https://github.com/liaoanxin663-gif/kernel_realme_RMX3031 \
+            -b T ~/kernel
+
+      - name: 集成 KernelSU Next
+        run: |
+          cd ~/kernel
+          curl -LSs \
+            "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/main/kernel/setup.sh" \
+            | bash -s v0.9.5
+
+      - name: 编译内核
+        run: |
+          cd ~/kernel
+          export PATH=~/clang/bin:$PATH
+          export ARCH=arm64
+          export SUBARCH=arm64
+          make CC=clang \
+               CLANG_TRIPLE=aarch64-linux-gnu- \
+               CROSS_COMPILE=aarch64-linux-android- \
+               cupida_defconfig
+          make CC=clang \
+               CLANG_TRIPLE=aarch64-linux-gnu- \
+               CROSS_COMPILE=aarch64-linux-android- \
+               -j$(nproc)
+
+      - name: 打包 AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3 ~/AnyKernel3
+          cp ~/kernel/arch/arm64/boot/Image.gz ~/AnyKernel3/
+          cd ~/AnyKernel3
+          sed -i 's/device.name1=.*/device.name1=RMX3031/' anykernel.sh
+          zip -r9 KernelSU_RMX3031.zip * -x .git
+
+      - name: 上传编译结果
+        uses: actions/upload-artifact@v4
+        with:
+          name: KernelSU_RMX3031
+          path: ~/AnyKernel3/KernelSU_RMX3031.zip
+          retention-days: 7
