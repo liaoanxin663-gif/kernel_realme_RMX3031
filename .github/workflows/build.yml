@@ -24,6 +24,12 @@ jobs:
             -O ~/clang.tar.gz
           tar -C ~/clang -zxf ~/clang.tar.gz
 
+      - name: 下载 GCC 工具链
+        run: |
+          git clone --depth=1 \
+            https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 \
+            ~/gcc64
+
       - name: 拉取内核源码
         run: |
           git clone --depth=1 \
@@ -40,7 +46,7 @@ jobs:
       - name: 编译内核
         run: |
           cd ~/kernel
-          export PATH=~/clang/bin:$PATH
+          export PATH=~/clang/bin:~/gcc64/bin:$PATH
           export ARCH=arm64
           export SUBARCH=arm64
           make CC=clang \
