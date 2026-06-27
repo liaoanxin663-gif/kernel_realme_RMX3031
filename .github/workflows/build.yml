@@ -1,4 +1,4 @@
-name: Build RMX3031 KernelSU (分支663版)
+name: Build RMX3031 KernelSU (663分支最终版)
 
 on:
   workflow_dispatch:
@@ -18,6 +18,12 @@ jobs:
           sudo apt-get install -y bc bison build-essential ccache curl flex \
             g++-multilib gcc-multilib git libssl-dev libncurses5-dev \
             python3 python-is-python3 zip wget
+
+      - name: 修复 MTK 头文件路径
+        run: |
+          cd $GITHUB_WORKSPACE
+          find . -name "uxio_first_opt.c" -exec sed -i 's|<trace/uxio_first_opt_trace.h>|"trace/uxio_first_opt_trace.h"|g' {} + || true
+          find kernel/trace -name "*.h" -o -name "*.c" | xargs sed -i 's|include "./mtk_ftrace.h"|include "mtk_ftrace.h"|g' 2>/dev/null || true
 
       - name: 编译内核
         run: |
