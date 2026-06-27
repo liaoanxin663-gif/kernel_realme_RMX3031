@@ -14,7 +14,7 @@ jobs:
             bc bison build-essential ccache curl flex \
             g++-multilib gcc-multilib git libssl-dev \
             libncurses5-dev libncurses5 python3 \
-            python-is-python3 zip wget
+            python-is-python3 zip wget gcc
 
       - name: 下载 Clang 工具链
         run: |
@@ -50,10 +50,14 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
           make CC=clang \
+               HOSTCC=gcc \
+               HOSTCXX=g++ \
                CLANG_TRIPLE=aarch64-linux-gnu- \
                CROSS_COMPILE=aarch64-linux-android- \
                cupida_defconfig
           make CC=clang \
+               HOSTCC=gcc \
+               HOSTCXX=g++ \
                CLANG_TRIPLE=aarch64-linux-gnu- \
                CROSS_COMPILE=aarch64-linux-android- \
                -j$(nproc)
