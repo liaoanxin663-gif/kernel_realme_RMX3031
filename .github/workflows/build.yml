@@ -52,12 +52,16 @@ jobs:
           make CC=clang \
                HOSTCC=gcc \
                HOSTCXX=g++ \
+               LLVM=1 \
+               LLVM_IAS=1 \
                CLANG_TRIPLE=aarch64-linux-gnu- \
                CROSS_COMPILE=aarch64-linux-android- \
                cupida_defconfig
           make CC=clang \
                HOSTCC=gcc \
                HOSTCXX=g++ \
+               LLVM=1 \
+               LLVM_IAS=1 \
                CLANG_TRIPLE=aarch64-linux-gnu- \
                CROSS_COMPILE=aarch64-linux-android- \
                -j$(nproc)
