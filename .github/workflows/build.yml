@@ -1,4 +1,4 @@
-name: Build RMX3031 KernelSU (带日志版)
+name: Build RMX3031 KernelSU (最终修复版)
 
 on:
   workflow_dispatch:
@@ -12,12 +12,22 @@ jobs:
         with:
           ref: 663
 
-      - name: 安装依赖
+      - name: 安装依赖 + 缺失的 LLVM 工具
         run: |
           sudo apt-get update
           sudo apt-get install -y bc bison build-essential ccache curl flex \
             g++-multilib gcc-multilib git libssl-dev libncurses5-dev \
-            python3 python-is-python3 zip wget
+            python3 python-is-python3 zip wget lld llvm clang
+
+      - name: 下载 Clang 工具链
+        run: |
+          mkdir -p $HOME/clang
+          wget -q "https://github.com/ZyCromerZ/Clang/releases/download/18.0.0git-20240101-release/Clang-18.0.0git-20240101.tar.gz" -O $HOME/clang.tar.gz
+          tar -C $HOME/clang -zxf $HOME/clang.tar.gz
+
+      - name: 下载 GCC 工具链
+        run: |
+          git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 $HOME/gcc64
 
       - name: 修复 MTK 头文件路径
         run: |
@@ -27,7 +37,7 @@ jobs:
 
       - name: 编译内核
         run: |
-          export PATH=$HOME/clang/bin:$HOME/gcc64/bin:$PATH
+          export PATH=$HOME/clang/bin:$HOME/gcc64/bin:/usr/bin:$PATH
           export ARCH=arm64
           export SUBARCH=arm64
           make O=out CC=clang HOSTCC=gcc HOSTCXX=g++ LLVM=1 LLVM_IAS=1 \
@@ -37,7 +47,7 @@ jobs:
                CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- \
                -j$(nproc) 2>&1 | tee build.log
 
-      - name: 上传 build.log（关键！）
+      - name: 上传 build.log
         uses: actions/upload-artifact@v4
         with:
           name: build-log
