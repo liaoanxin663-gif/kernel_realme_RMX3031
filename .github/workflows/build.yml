@@ -1,4 +1,4 @@
-name: Build RMX3031 KernelSU (663分支最终版)
+name: Build RMX3031 KernelSU (带日志版)
 
 on:
   workflow_dispatch:
@@ -37,6 +37,13 @@ jobs:
                CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- \
                -j$(nproc) 2>&1 | tee build.log
 
+      - name: 上传 build.log（关键！）
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
+
       - name: 打包 AnyKernel3
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3 AnyKernel3
@@ -51,8 +58,7 @@ jobs:
           done
 
           if [ -z "$KERNEL_IMAGE" ]; then
-            echo "未找到 Image，列出实际生成的文件："
-            find .. -name "Image*" | head -20
+            echo "未找到 Image"
             exit 1
           fi
 
