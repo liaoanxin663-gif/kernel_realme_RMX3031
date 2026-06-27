@@ -43,6 +43,12 @@ jobs:
             "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" \
             | bash -
 
+      - name: 修复 MTK 头文件路径
+        run: |
+          echo 'ccflags-y += -I$(src)' >> ~/kernel/kernel/sched_assist/Makefile
+          find ~/kernel -name "*.c" | xargs grep -l '"./sched_assist_trace.h"' | \
+            xargs sed -i 's|"./sched_assist_trace.h"|"sched_assist_trace.h"|g'
+
       - name: 编译内核
         run: |
           cd ~/kernel
