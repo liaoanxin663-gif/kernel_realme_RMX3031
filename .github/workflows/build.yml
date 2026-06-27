@@ -1,4 +1,4 @@
-name: Build RMX3031 Kernel with KernelSU (最终修复版)
+name: Build RMX3031 KernelSU (663分支最终版)
 
 on:
   workflow_dispatch:
@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: 663
 
       - name: 安装依赖
         run: |
@@ -17,34 +19,14 @@ jobs:
             g++-multilib gcc-multilib git libssl-dev libncurses5-dev \
             python3 python-is-python3 zip wget
 
-      - name: 下载 Clang 工具链
-        run: |
-          mkdir -p $HOME/clang
-          wget -q "https://github.com/ZyCromerZ/Clang/releases/download/18.0.0git-20240101-release/Clang-18.0.0git-20240101.tar.gz" -O $HOME/clang.tar.gz
-          tar -C $HOME/clang -zxf $HOME/clang.tar.gz
-
-      - name: 下载 GCC 工具链
-        run: |
-          git clone --depth=1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9 $HOME/gcc64
-
-      - name: 拉取内核源码
-        run: |
-          git clone --depth=1 https://github.com/liaoanxin663-gif/kernel_realme_RMX3031 -b T $HOME/kernel
-
-      - name: 集成 KernelSU Next
-        run: |
-          cd $HOME/kernel
-          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -
-
       - name: 修复 MTK 头文件路径
         run: |
-          cd $HOME/kernel
+          cd $GITHUB_WORKSPACE
           find . -name "uxio_first_opt.c" -exec sed -i 's|<trace/uxio_first_opt_trace.h>|"trace/uxio_first_opt_trace.h"|g' {} + || true
           find kernel/trace -name "*.h" -o -name "*.c" | xargs sed -i 's|include "./mtk_ftrace.h"|include "mtk_ftrace.h"|g' 2>/dev/null || true
 
       - name: 编译内核
         run: |
-          cd $HOME/kernel
           export PATH=$HOME/clang/bin:$HOME/gcc64/bin:$PATH
           export ARCH=arm64
           export SUBARCH=arm64
@@ -55,18 +37,13 @@ jobs:
                CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- \
                -j$(nproc) 2>&1 | tee build.log
 
-      - name: 打包 AnyKernel3（修复版）
+      - name: 打包 AnyKernel3
         run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3 $HOME/AnyKernel3
-          cd $HOME/AnyKernel3
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3 AnyKernel3
+          cd AnyKernel3
 
-          # 查找内核镜像
           KERNEL_IMAGE=""
-          for f in \
-            $HOME/kernel/out/arch/arm64/boot/Image.gz \
-            $HOME/kernel/out/arch/arm64/boot/Image \
-            $HOME/kernel/arch/arm64/boot/Image.gz \
-            $HOME/kernel/arch/arm64/boot/Image; do
+          for f in ../out/arch/arm64/boot/Image.gz ../out/arch/arm64/boot/Image; do
             if [ -f "$f" ]; then
               KERNEL_IMAGE="$f"
               break
@@ -74,13 +51,11 @@ jobs:
           done
 
           if [ -z "$KERNEL_IMAGE" ]; then
-            echo "=== 未找到 Image，列出实际生成的文件 ==="
-            find $HOME/kernel -name "Image*" -o -name "zImage*" 2>/dev/null | head -30 || true
-            ls -la $HOME/kernel/out/arch/arm64/boot/ 2>/dev/null || true
+            echo "未找到 Image，列出实际生成的文件："
+            find .. -name "Image*" | head -20
             exit 1
           fi
 
-          echo "找到内核镜像: $KERNEL_IMAGE"
           cp "$KERNEL_IMAGE" ./
           sed -i 's/device.name1=.*/device.name1=RMX3031/' anykernel.sh
           zip -r9 KernelSU_RMX3031.zip * -x .git
@@ -89,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: KernelSU_RMX3031
-          path: $HOME/AnyKernel3/KernelSU_RMX3031.zip
+          path: AnyKernel3/KernelSU_RMX3031.zip
           retention-days: 7
